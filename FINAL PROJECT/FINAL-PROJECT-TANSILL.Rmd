@@ -1,0 +1,61 @@
+---
+title: "FINAL PROJECT"
+author: "callie tansill-suddath"
+date: "4/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+#For my final project fot JOUR 772, I am looking at hospital preparedness during the COVID-19 pandemic in the United States. I am doing this by first comparing number of icu beds per county with county populations, then I will look at COVID death rate data per county.
+
+#loading packages I might need and some I recall using from previous labs
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(janitor)
+library(knitr)
+library(lubridate)
+```
+
+## loading in the data
+
+```{r}
+census_data <- read_csv("2018_county_census.csv")
+hospital_data <- read_csv("hospital_data.csv")
+```
+
+#viewing census data
+
+```{r}
+glimpse(census_data)
+view(census_data)
+```
+
+#viewing hospital data
+
+```{r}
+glimpse(hospital_data)
+view(hospital_data)
+```
+
+#cleaning so hospital data is lowercase
+
+```{r}
+hospital_data <- clean_names(hospital_data)
+```
+
+#mutate
+
+```{r}
+census_data <- census_data %>%
+  mutate(geo_display = mdy(geo_display)) %>%
+  select(geo_display, everything())
+
+
+```
