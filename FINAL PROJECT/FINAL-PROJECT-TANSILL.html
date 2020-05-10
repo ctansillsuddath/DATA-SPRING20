@@ -396,22 +396,16 @@ library(lubridate)</code></pre>
 <pre><code>## The following object is masked from 'package:base':
 ## 
 ##     date</code></pre>
-<pre class="r"><code>library(tidycensus)</code></pre>
+<pre class="r"><code>library(tidycensus)
+
+#install.packages(&quot;readxl&quot;)
+library(readxl)
+
+#install.packages(&quot;usmap&quot;)
+library(usmap)</code></pre>
 </div>
 <div id="loading-in-the-data" class="section level2">
 <h2>loading in the data</h2>
-<pre class="r"><code>census_data &lt;- read_csv(&quot;2018_county_census.csv&quot;)</code></pre>
-<pre><code>## Parsed with column specification:
-## cols(
-##   .default = col_double(),
-##   statecountyfips = col_character(),
-##   geo_display = col_character(),
-##   centraloutlyingcounty = col_character(),
-##   countyequivalent = col_character(),
-##   csatitle = col_character(),
-##   statename = col_character()
-## )</code></pre>
-<pre><code>## See spec(...) for full column specifications.</code></pre>
 <pre class="r"><code>hospital_data &lt;- read_csv(&quot;hospital_data.csv&quot;)</code></pre>
 <pre><code>## Parsed with column specification:
 ## cols(
@@ -433,39 +427,8 @@ library(lubridate)</code></pre>
 ##   filed_date = col_date(format = &quot;&quot;),
 ##   fy_end_date = col_date(format = &quot;&quot;),
 ##   hospice_beds = col_logical()
-## )
-## See spec(...) for full column specifications.</code></pre>
-<p>#viewing census data</p>
-<pre class="r"><code>glimpse(census_data)</code></pre>
-<pre><code>## Observations: 3,142
-## Variables: 26
-## $ statecountyfips       &lt;chr&gt; &quot;01049&quot;, &quot;01027&quot;, &quot;01019&quot;, &quot;01065&quot;, &quot;31039&quot;, &quot;5…
-## $ geo_display           &lt;chr&gt; &quot;DeKalb County, Alabama&quot;, &quot;Clay County, Alabama…
-## $ est2018_all           &lt;dbl&gt; 71385, 13275, 26032, 14726, 8940, 4426, 1781, 4…
-## $ est2018_0to4          &lt;dbl&gt; 4237, 687, 1206, 979, 596, 137, 86, 214, 91, 13…
-## $ est2018_5to9          &lt;dbl&gt; 4692, 733, 1348, 909, 551, 230, 130, 206, 107, …
-## $ est2018_10to14        &lt;dbl&gt; 5213, 769, 1482, 956, 654, 229, 109, 251, 120, …
-## $ est2018_15to19        &lt;dbl&gt; 4796, 795, 1499, 910, 611, 265, 115, 249, 103, …
-## $ est2018_20to24        &lt;dbl&gt; 4058, 780, 1304, 933, 503, 174, 75, 203, 87, 11…
-## $ est2018_25to29        &lt;dbl&gt; 4542, 763, 1548, 951, 428, 183, 68, 192, 103, 1…
-## $ est2018_30to34        &lt;dbl&gt; 3963, 683, 1206, 783, 451, 169, 86, 193, 81, 11…
-## $ est2018_35to39        &lt;dbl&gt; 4256, 772, 1298, 840, 478, 181, 107, 235, 97, 1…
-## $ est2018_40to44        &lt;dbl&gt; 4505, 734, 1471, 795, 453, 193, 68, 188, 87, 14…
-## $ est2018_45to49        &lt;dbl&gt; 4839, 870, 1733, 806, 434, 227, 82, 205, 106, 1…
-## $ est2018_50to54        &lt;dbl&gt; 4642, 979, 1857, 916, 565, 285, 90, 228, 113, 1…
-## $ est2018_55to59        &lt;dbl&gt; 4755, 1012, 2016, 1106, 625, 323, 144, 333, 183…
-## $ est2018_60to64        &lt;dbl&gt; 4565, 947, 2084, 1013, 626, 406, 124, 361, 182,…
-## $ est2018_65to69        &lt;dbl&gt; 4030, 852, 1862, 923, 500, 443, 156, 304, 170, …
-## $ est2018_70to74        &lt;dbl&gt; 3345, 673, 1683, 715, 434, 418, 131, 285, 181, …
-## $ est2018_75to79        &lt;dbl&gt; 2279, 541, 1152, 486, 344, 267, 80, 195, 139, 1…
-## $ est2018_80to84        &lt;dbl&gt; 1461, 373, 747, 355, 297, 164, 57, 157, 81, 100…
-## $ est2018_85plus        &lt;dbl&gt; 1207, 312, 536, 350, 390, 132, 73, 196, 108, 85…
-## $ cbsacode              &lt;dbl&gt; NA, NA, NA, 46220, NA, NA, NA, NA, NA, NA, NA, …
-## $ centraloutlyingcounty &lt;chr&gt; NA, NA, NA, &quot;Outlying&quot;, NA, NA, NA, NA, NA, NA,…
-## $ countyequivalent      &lt;chr&gt; NA, NA, NA, &quot;Hale County&quot;, NA, NA, NA, NA, NA, …
-## $ csatitle              &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
-## $ statename             &lt;chr&gt; NA, NA, NA, &quot;Alabama&quot;, NA, NA, NA, NA, NA, NA, …</code></pre>
-<pre class="r"><code>view(census_data)</code></pre>
+## )</code></pre>
+<pre><code>## See spec(...) for full column specifications.</code></pre>
 <p>#viewing hospital data</p>
 <pre class="r"><code>glimpse(hospital_data)</code></pre>
 <pre><code>## Observations: 4,766
@@ -519,22 +482,30 @@ Clean the hospital data
 * summarise to add up all_beds
 * that will leave us with a dataframe of two columns (statecountyfips, sum_all_beds)</code></pre>
 <pre class="r"><code>hospital_data %&gt;%
-group_by(statecountyfips)%&gt;% 
+#group_by(GEOID)%&gt;% 
 summarise(all_beds = n())</code></pre>
-<pre><code>## # A tibble: 2,493 x 2
-##    statecountyfips all_beds
-##              &lt;dbl&gt;    &lt;int&gt;
-##  1            1001        1
-##  2            1003        3
-##  3            1005        1
-##  4            1007        1
-##  5            1009        1
-##  6            1011        1
-##  7            1013        1
-##  8            1015        2
-##  9            1019        1
-## 10            1021        1
-## # … with 2,483 more rows</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   all_beds
+##      &lt;int&gt;
+## 1     4766</code></pre>
+<pre class="r"><code>view(hospital_data)
+
+colnames(hospital_data) </code></pre>
+<pre><code>##  [1] &quot;hospital_name&quot;         &quot;address&quot;               &quot;city&quot;                 
+##  [4] &quot;state&quot;                 &quot;zip_code&quot;              &quot;county_name&quot;          
+##  [7] &quot;phone_number&quot;          &quot;hospital_type&quot;         &quot;hospital_ownership&quot;   
+## [10] &quot;emergency_services&quot;    &quot;lat&quot;                   &quot;lng&quot;                  
+## [13] &quot;geocode_flag&quot;          &quot;geocode_accuracy&quot;      &quot;countyfips&quot;           
+## [16] &quot;statefips&quot;             &quot;statecountyfips&quot;       &quot;cbsacode&quot;             
+## [19] &quot;csatitle&quot;              &quot;centraloutlyingcounty&quot; &quot;countyequivalent&quot;     
+## [22] &quot;hosp_lookup_url&quot;       &quot;PRVDR_NUM&quot;             &quot;RPT_REC_NUM&quot;          
+## [25] &quot;filed_date&quot;            &quot;fy_end_date&quot;           &quot;acute_beds&quot;           
+## [28] &quot;icu_beds&quot;              &quot;coronary_beds&quot;         &quot;burn_beds&quot;            
+## [31] &quot;surg_icu_beds&quot;         &quot;oth_spec_beds&quot;         &quot;subtotal_acute_beds&quot;  
+## [34] &quot;subprovider_ipf_beds&quot;  &quot;subprovider_irf_beds&quot;  &quot;subprovider_oth_beds&quot; 
+## [37] &quot;skilled_nursing_beds&quot;  &quot;nursing_fac_beds&quot;      &quot;oth_longterm_beds&quot;    
+## [40] &quot;hospice_beds&quot;          &quot;all_beds&quot;</code></pre>
+<pre class="r"><code>#hospital_data &lt;- hospital_data %&gt;% rename (GEOID = statecountyfips)</code></pre>
 <p>STEP 2: Get Census data Pull in from tidycensus, by county * total population</p>
 <p>Pull in from tidycensus by county * Median household income</p>
 <p>Join the two census dataframes on GEOID (which is the county fips code)</p>
@@ -867,36 +838,64 @@ summarise(all_beds = n())</code></pre>
   |======================================================================|  99%
   |                                                                            
   |======================================================================| 100%</code></pre>
-<pre class="r"><code>median_income &lt;- get_acs(geography = &quot;county&quot;, 
-              variables = c(medincome = &quot;B19013_001&quot;), 
-              year = 2018)</code></pre>
-<pre><code>## Getting data from the 2014-2018 5-year ACS</code></pre>
+<pre class="r"><code>median_income &lt;- get_acs(
+  geography = &quot;county&quot;,
+  year = 2017,
+  survey = &quot;acs5&quot;,
+  variables = c(mhi = &quot;B19013_001&quot;))</code></pre>
+<pre><code>## Getting data from the 2013-2017 5-year ACS</code></pre>
+<pre class="r"><code>colnames(median_income)             </code></pre>
+<pre><code>## [1] &quot;GEOID&quot;    &quot;NAME&quot;     &quot;variable&quot; &quot;estimate&quot; &quot;moe&quot;</code></pre>
 <pre class="r"><code>colnames(county_geodata)</code></pre>
 <pre><code>## [1] &quot;GEOID&quot;    &quot;NAME&quot;     &quot;variable&quot; &quot;estimate&quot; &quot;moe&quot;      &quot;geometry&quot;</code></pre>
-<pre class="r"><code>county_geodata &lt;- county_geodata %&gt;% rename(statecountyfips = GEOID)
-
-
-county_geodata_clean &lt;- county_geodata %&gt;%
-  select(statecountyfips, NAME, estimate)
-
-population_2018 &lt;- census_data %&gt;%
-  clean_names()  %&gt;%
-  select(statecountyfips, geo_display,est2018_all)
-
-colnames(population_2018)</code></pre>
-<pre><code>## [1] &quot;statecountyfips&quot; &quot;geo_display&quot;     &quot;est2018_all&quot;</code></pre>
+<pre class="r"><code>county_geodata_clean &lt;- county_geodata %&gt;%
+  select(GEOID, NAME, estimate)</code></pre>
 <pre class="r"><code>population_income &lt;- county_geodata_clean %&gt;%
-  inner_join(population_2018, by=(&quot;statecountyfips&quot;)) %&gt;%
-  select(NAME, estimate, est2018_all)
+  inner_join(median_income, by=(&quot;GEOID&quot;))
+  
 
 colnames(population_income)</code></pre>
-<pre><code>## [1] &quot;NAME&quot;        &quot;estimate&quot;    &quot;est2018_all&quot; &quot;geometry&quot;</code></pre>
-<pre class="r"><code>population_income &lt;- population_income %&gt;% rename(income = estimate)
-population_income &lt;- population_income %&gt;% rename(population2018 = est2018_all)</code></pre>
+<pre><code>## [1] &quot;GEOID&quot;      &quot;NAME.x&quot;     &quot;estimate.x&quot; &quot;NAME.y&quot;     &quot;variable&quot;  
+## [6] &quot;estimate.y&quot; &quot;moe&quot;        &quot;geometry&quot;</code></pre>
+<pre class="r"><code>population_income &lt;- population_income %&gt;% rename(med_income = estimate.y)
+population_income &lt;- population_income %&gt;% rename(population2018 = estimate.x)
+
+select(population_income, -NAME.y)</code></pre>
+<pre><code>## Simple feature collection with 3220 features and 6 fields
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: -179.1489 ymin: 17.88328 xmax: 179.7785 ymax: 71.36516
+## epsg (SRID):    4269
+## proj4string:    +proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs
+## First 10 features:
+##    GEOID                   NAME.x population2018 variable med_income  moe
+## 1  01001  Autauga County, Alabama          55200      mhi      55317 2838
+## 2  01003  Baldwin County, Alabama         208107      mhi      52562 1348
+## 3  01005  Barbour County, Alabama          25782      mhi      33368 2551
+## 4  01007     Bibb County, Alabama          22527      mhi      43404 3431
+## 5  01009   Blount County, Alabama          57645      mhi      47412 2630
+## 6  01011  Bullock County, Alabama          10352      mhi      29655 5376
+## 7  01013   Butler County, Alabama          20025      mhi      36326 2701
+## 8  01015  Calhoun County, Alabama         115098      mhi      43686 1491
+## 9  01017 Chambers County, Alabama          33826      mhi      37342 2011
+## 10 01019 Cherokee County, Alabama          25853      mhi      40041 2316
+##                          geometry
+## 1  MULTIPOLYGON (((-86.9212 32...
+## 2  MULTIPOLYGON (((-88.02858 3...
+## 3  MULTIPOLYGON (((-85.74803 3...
+## 4  MULTIPOLYGON (((-87.42194 3...
+## 5  MULTIPOLYGON (((-86.96336 3...
+## 6  MULTIPOLYGON (((-85.99916 3...
+## 7  MULTIPOLYGON (((-86.90894 3...
+## 8  MULTIPOLYGON (((-86.14623 3...
+## 9  MULTIPOLYGON (((-85.59343 3...
+## 10 MULTIPOLYGON (((-85.84384 3...</code></pre>
 <p>STEP 3: Load USDA ruralness spreadsheet</p>
-<pre class="r"><code>#rural_data &lt;- read_csv(&quot;ruralurbancodes2013.csv&quot;)</code></pre>
+<pre class="r"><code>rural_data &lt;- read_excel(&quot;rucc2013.xls&quot;)</code></pre>
 <p>STEP 4: Join census data to hospital data * Join on GEOID = statecountyfips</p>
 <p>Join this census_hospital sheet to ruralness sheet * Join on GEOID</p>
+<pre class="r"><code>#census_hospital &lt;- population_income %&gt;%
+  #inner_join(hospital_data, by=(&quot;GEOID&quot;))</code></pre>
 <p>STEP 5: * In this newsly joined sheet that has fips, beds, population, median household income and ruralness, use mutate to calculate beds per person by dividing beds by population.</p>
 <p>STEP 6 Start To do analysis we need One data frame with the following features: * Each row is a county * One column each for the following: * Name of the county * Name of the state * fips code (five digts, two digit state, three digit county i.e. 01049) * Total beds and/or ICU Beds * Total population of the county * A computed column with beds per person or beds per 10,000 people or 100,000 * Median Household income * A marker of ruralness for each county USDA thing</p>
 </div>

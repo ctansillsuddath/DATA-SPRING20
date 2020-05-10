@@ -22,21 +22,20 @@ library(janitor)
 library(knitr)
 library(lubridate)
 library(tidycensus)
+
+install.packages("readxl")
+library(readxl)
+
+install.packages("usmap")
+library(usmap)
 ```
 
 ## loading in the data
 
 ```{r}
-census_data <- read_csv("2018_county_census.csv")
 hospital_data <- read_csv("hospital_data.csv")
 ```
 
-#viewing census data
-
-```{r}
-glimpse(census_data)
-view(census_data)
-```
 
 #viewing hospital data
 
@@ -58,6 +57,12 @@ Clean the hospital data
 hospital_data %>%
 group_by(statecountyfips)%>% 
 summarise(all_beds = n())
+
+view(hospital_data)
+
+colnames(hospital_data) 
+
+
 ```
 
 STEP 2:
@@ -76,39 +81,37 @@ census_api_key("d0ed7ea2cfbf5fd6b5e737d5eca2c50bd07155b3")
 county_geodata <- get_acs(geography = "county",
               variables = "B01001_001", geometry = TRUE)
 
-median_income <- get_acs(geography = "county", 
-              variables = c(medincome = "B19013_001"), 
-              year = 2018)
-
+median_income <- get_acs(
+  geography = "county",
+  year = 2017,
+  survey = "acs5",
+  variables = c(mhi = "B19013_001"))
+ 
+colnames(median_income)             
 colnames(county_geodata)
-county_geodata <- county_geodata %>% rename(statecountyfips = GEOID)
-
 
 county_geodata_clean <- county_geodata %>%
-  select(statecountyfips, NAME, estimate)
+  select(GEOID, NAME, estimate)
 
-population_2018 <- census_data %>%
-  clean_names()  %>%
-  select(statecountyfips, geo_display,est2018_all)
-
-colnames(population_2018)
 ```
 
 ```{R}
 population_income <- county_geodata_clean %>%
-  inner_join(population_2018, by=("statecountyfips")) %>%
-  select(NAME, estimate, est2018_all)
+  inner_join(median_income, by=("GEOID"))
+  
 
 colnames(population_income)
-population_income <- population_income %>% rename(income = estimate)
-population_income <- population_income %>% rename(population2018 = est2018_all)
+population_income <- population_income %>% rename(med_income = estimate.y)
+population_income <- population_income %>% rename(population2018 = estimate.x)
+
+select(population_income, -NAME.y)
 ```
 STEP 3:
 Load USDA ruralness spreadsheet
 
 ```{r}
 
-#rural_data <- read_csv("ruralurbancodes2013.csv")
+rural_data <- read_excel("rucc2013.xls")
 
 ```
 
@@ -119,6 +122,13 @@ Join census data to hospital data
 
 Join this census_hospital sheet to ruralness sheet
 * Join on GEOID
+
+```{r}
+
+census_hospital <- population_income %>%
+  inner_join(hospital_data, by=("GEOID"))
+
+```
 
 STEP 5:
 * In this newsly joined sheet that has fips, beds, population, median household income and ruralness, use mutate to calculate beds per person by dividing beds by population. 
