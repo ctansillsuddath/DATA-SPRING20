@@ -125,8 +125,21 @@ Join this census_hospital sheet to ruralness sheet
 
 ```{r}
 
+population_income <- population_income %>%  
+    mutate(column1 = as.numeric(GEOID))
+```
+
+```{r}
+
 census_hospital <- population_income %>%
-  inner_join(hospital_data, by=("GEOID"))
+  inner_join(hospital_data, by=("GEOID")) %>%
+  group_by(GEOID, population2018, med_income) %>%
+  summarise(all_beds = n())
+
+census_hospital_ruralness <- census_hospital %>%
+  inner_join(rural_data, by=("GEOID")) %>%
+  select(GEOID, State, County_Name, all_beds, population2018, med_income, RUCC_2013, geometry) %>%
+  clean_names(census_hospital_ruralness)
 
 ```
 
