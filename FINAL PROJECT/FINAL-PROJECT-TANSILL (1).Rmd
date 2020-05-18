@@ -1,0 +1,165 @@
+---
+title: "FINAL PROJECT"
+author: "callie tansill-suddath"
+date: "4/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+#For my final project fot JOUR 772, I am looking at hospital preparedness during the COVID-19 pandemic in the United States. I am doing this by first comparing number of icu beds per county with county populations, then I will look at COVID death rate data per county.
+
+#loading packages I might need and some I recall using from previous labs
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(janitor)
+library(knitr)
+library(lubridate)
+library(tidycensus)
+
+install.packages("readxl")
+library(readxl)
+
+install.packages("usmap")
+library(usmap)
+```
+
+## loading in the data
+
+```{r}
+hospital_data <- read_csv("hospital_data.csv")
+```
+
+
+#viewing hospital data
+
+```{r}
+glimpse(hospital_data)
+view(hospital_data)
+```
+
+```
+
+STEP 1: 
+Clean the hospital data
+* group by statecountyfips
+* summarise to add up all_beds
+* that will leave us with a dataframe of two columns (statecountyfips, sum_all_beds)
+```
+
+```{r}
+hospital_data %>%
+group_by(statecountyfips) %>% 
+summarise(all_beds = n())
+
+hospital_data <- hospital_data %>% rename(GEOID = statecountyfips)
+
+hospital_data$GEOID <- str_pad(hospital_data$GEOID, width=5, side="left", pad="0")
+
+view(hospital_data)
+
+colnames(hospital_data) 
+
+
+```
+
+STEP 2:
+Get Census data 
+Pull in from tidycensus, by county
+* total population
+
+Pull in from tidycensus by county
+* Median household income
+
+Join the two census dataframes on GEOID (which is the county fips code)
+
+```{r}
+census_api_key("d0ed7ea2cfbf5fd6b5e737d5eca2c50bd07155b3")
+
+county_geodata <- get_acs(geography = "county",
+              variables = "B01001_001", geometry = TRUE)
+
+median_income <- get_acs(
+  geography = "county",
+  year = 2017,
+  survey = "acs5",
+  variables = c(mhi = "B19013_001"))
+ 
+colnames(median_income)             
+colnames(county_geodata)
+
+county_geodata_clean <- county_geodata %>%
+  select(GEOID, NAME, estimate)
+
+```
+
+```{R}
+population_income <- county_geodata_clean %>%
+  inner_join(median_income, by=("GEOID"))
+  
+
+colnames(population_income)
+population_income <- population_income %>% rename(med_income = estimate.y)
+population_income <- population_income %>% rename(population2018 = estimate.x)
+
+select(population_income, -NAME.y)
+```
+STEP 3:
+Load USDA ruralness spreadsheet
+
+```{r}
+
+rural_data <- read_excel("rucc2013.xls")
+
+```
+
+```{r}
+
+rural_data <- rural_data %>% rename(GEOID = FIPS)
+
+```
+
+
+STEP 4:
+Join census data to hospital data
+* Join on GEOID = statecountyfips
+
+Join this census_hospital sheet to ruralness sheet
+* Join on GEOID
+
+```{r}
+
+census_hospital <- population_income %>%
+  inner_join(hospital_data, by=("GEOID")) %>%
+  group_by(GEOID, population2018, med_income) %>%
+  summarise(all_beds = n())
+
+census_hospital_ruralness <- census_hospital %>%
+  inner_join(rural_data, by=("GEOID")) %>%
+  select(GEOID, State, County_Name, all_beds, population2018, med_income, RUCC_2013, geometry) %>%
+  clean_names(census_hospital_ruralness)
+
+```
+
+STEP 5:
+* In this newsly joined sheet that has fips, beds, population, median household income and ruralness, use mutate to calculate beds per person by dividing beds by population. 
+
+STEP 6
+Start To do analysis we need
+One data frame with the following features:
+* Each row is a county
+* One column each for the following:
+  * Name of the county 
+  * Name of the state 
+  * fips code (five digts, two digit state, three digit county i.e. 01049)
+  * Total beds and/or ICU Beds
+  * Total population of the county
+  * A computed column with beds per person or beds per 10,000 people or 100,000
+  * Median Household income
+  * A marker of ruralness for each county USDA thing

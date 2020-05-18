@@ -1,6 +1,6 @@
 ---
-title: "FINAL PROJECT"
-author: "callie tansill-suddath"
+title: "Hospital Preparedness in the U.S."
+author: "Callie Tansill-Suddath"
 date: "4/26/2020"
 output: html_document
 ---
@@ -11,9 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-#For my final project fot JOUR 772, I am looking at hospital preparedness during the COVID-19 pandemic in the United States. I am doing this by first comparing number of icu beds per county with county populations, then I will look at COVID death rate data per county.
+#For my final project, I am exploring hospital preparedness during the COVID-19 pandemic in the United States. I am doing this by first comparing number of hospital beds per county with county populations and degree of ruralness, then I will look at COVID death rate data per county.
 
-#loading packages I might need and some I recall using from previous labs
+#loading packages
 
 ```{r}
 library(tidyverse)
@@ -22,15 +22,13 @@ library(janitor)
 library(knitr)
 library(lubridate)
 library(tidycensus)
-
-install.packages("readxl")
 library(readxl)
-
-install.packages("usmap")
 library(usmap)
+library(ggplot2)
+library(ggthemes)
 ```
 
-## loading in the data
+## Loading in the Data
 
 ```{r}
 hospital_data <- read_csv("hospital_data.csv")
@@ -45,7 +43,6 @@ view(hospital_data)
 ```
 
 ```
-
 STEP 1: 
 Clean the hospital data
 * group by statecountyfips
@@ -55,8 +52,12 @@ Clean the hospital data
 
 ```{r}
 hospital_data %>%
-group_by(statecountyfips)%>% 
+group_by(statecountyfips) %>% 
 summarise(all_beds = n())
+
+hospital_data <- hospital_data %>% rename(GEOID = statecountyfips)
+
+hospital_data$GEOID <- str_pad(hospital_data$GEOID, width=5, side="left", pad="0")
 
 view(hospital_data)
 
@@ -113,6 +114,13 @@ Load USDA ruralness spreadsheet
 
 rural_data <- read_excel("rucc2013.xls")
 
+
+```
+
+```{r}
+
+rural_data <- rural_data %>% rename(GEOID = FIPS)
+
 ```
 
 
@@ -125,37 +133,98 @@ Join this census_hospital sheet to ruralness sheet
 
 ```{r}
 
-population_income <- population_income %>%  
-    mutate(column1 = as.numeric(GEOID))
-```
-
-```{r}
-
 census_hospital <- population_income %>%
   inner_join(hospital_data, by=("GEOID")) %>%
-  group_by(GEOID, population2018, med_income) %>%
-  summarise(all_beds = n())
+  group_by(GEOID, population2018, med_income, all_beds)
 
 census_hospital_ruralness <- census_hospital %>%
   inner_join(rural_data, by=("GEOID")) %>%
   select(GEOID, State, County_Name, all_beds, population2018, med_income, RUCC_2013, geometry) %>%
-  clean_names(census_hospital_ruralness)
+  clean_names(census_hospital_ruralness)%>%
+  group_by(geoid)
 
+census_hospital_ruralness <- census_hospital_ruralness %>%
+  group_by(geoid, state, county_name, population2018, med_income, rucc_2013) %>% 
+  summarise(all_beds = sum(all_beds))
+  
 ```
 
 STEP 5:
 * In this newsly joined sheet that has fips, beds, population, median household income and ruralness, use mutate to calculate beds per person by dividing beds by population. 
 
+```{r}
+
+census_hospital_ruralness $ beds_per_person <- (census_hospital_ruralness$all_beds / census_hospital_ruralness$population2018)
+
+```
+
 STEP 6
-Start To do analysis we need
-One data frame with the following features:
-* Each row is a county
+The final data frame includes:
+* One row per county, and
 * One column each for the following:
   * Name of the county 
   * Name of the state 
   * fips code (five digts, two digit state, three digit county i.e. 01049)
-  * Total beds and/or ICU Beds
+  * Total beds 
   * Total population of the county
   * A computed column with beds per person or beds per 10,000 people or 100,000
   * Median Household income
-  * A marker of ruralness for each county USDA thing
+  * A marker of ruralness for each county using the USDA metrics
+  
+## Analysis
+
+
+```{r}
+ggplot(census_hospital_ruralness) +
+  geom_point(aes(med_income, beds_per_person)) +
+  labs(x="Median Income", y="Number of Hospital Beds Per Person", caption = "Source: U.S. Census Bureau and Big Local News", fill="key") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_smooth(aes(med_income, beds_per_person), method = "lm", se = FALSE)
+  options(scipen=999)
+```
+
+The graph above examines the relationship between number of hospital beds per person compared to median income in a given area. The hospital data from Big Local News indicates there is no hospital in the country that has one whole bed per person in the county where it is located. The closer to 0.01 the fewer the beds.
+
+There appears to be a bell curve, but nothing that stands out.
+
+```{r}
+  
+ggplot(census_hospital_ruralness) +
+  geom_point(aes(rucc_2013, beds_per_person,)) +
+  labs(x="USDA Ruralness Level", y="Number of Hospital Beds Per Person", caption = "Source: Big Local News and Rural-Urban Continuum Codes", fill="key") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  options(scipen=999)
+
+
+ 
+```
+Now, this graph shows something more interesting. The USDA Rural-Urban Continuum Codes categorize every area in the country on a scale of 1 through 9; 1 is the most urban, 9 is the most rural. This data indicates there are generally more beds per person in rural areas than there are in urban areas. 
+
+```{r}
+
+ggplot(census_hospital_ruralness) +
+  geom_point(aes(rucc_2013, population2018,)) +
+  labs(x="USDA Ruralness Level", y="2018 Population", caption = "Source: U.S. Census Bureau and Rural-Urban Continuum Codes", fill="key") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  options(scipen=999)
+
+```
+
+
+This explains it. The population in urban areas is overwhelmingly higher than it is in rural areas.
+
+```{r}
+census_hospital_ruralness %>%
+  ggplot(aes(fill = beds_per_person)) +
+  geom_sf(lwd = 0) +
+  theme_map() +
+  labs(fill='Hospital Beds per Person', caption = "Source: Big Local News") +
+  theme(legend.position="bottom") +
+  scale_fill_viridis_c(option = "plasma")
+```
+This map indicates the number of hospital beds per person are available in select areas of the country.
+
+## This project is incomplete
+While constructing this project, I ran into a few speedbumps that affected how my final product came out. I struggled to make a map, and to scale it. For some reason, commas wouldn't work on the map or in the graphs. 82 data cells showed up as "NA." Scientific notation was still present despite my indicating otherwise. This is obviously not something I am able to publish yet, but I plan to keep working on it and self-publish it later. I also want to add some COVID data and stylize the whole thing.
+
+But, for what it is worth, I am glad I started the project because my hypothesis was completely null. I thought urban areas would be more equipped to handle an onslaught on patients as indicated by more hospital beds per person. That is completely opposite of what is true!
